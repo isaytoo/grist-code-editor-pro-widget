@@ -895,7 +895,49 @@
         </div>
 
         <div class="guide-section">
-          <h2>📚 Fonctions Grist essentielles</h2>
+          <h2>� Exporter votre widget</h2>
+          <p>Une fois votre widget terminé, vous pouvez l'exporter pour l'utiliser ailleurs.</p>
+          
+          <h3 style="margin-top: 20px; font-size: 16px;">🔗 Option 1 : URL Data (rapide, sans hébergement)</h3>
+          <p>Génère une URL qui contient tout votre code encodé en base64. Idéal pour tester rapidement ou partager.</p>
+          <ol class="guide-steps">
+            <li>Cliquez sur <strong>"📦 Exporter ▼"</strong> puis <strong>"🔗 URL Data (copier)"</strong></li>
+            <li>L'URL est automatiquement copiée dans votre presse-papier</li>
+            <li>Dans Grist, ajoutez un <strong>widget personnalisé</strong></li>
+            <li>Collez l'URL dans le champ "URL personnalisée"</li>
+            <li>Votre widget fonctionne immédiatement !</li>
+          </ol>
+          <div class="guide-note">
+            <strong>💡 Avantages :</strong> Pas besoin d'hébergement, fonctionne instantanément, facile à partager.
+          </div>
+          <div class="guide-warning">
+            <strong>⚠️ Limites :</strong> L'URL peut être très longue. Pour des widgets complexes, préférez l'export ZIP.
+          </div>
+
+          <h3 style="margin-top: 20px; font-size: 16px;">📁 Option 2 : Fichier ZIP (pour hébergement)</h3>
+          <p>Télécharge un fichier ZIP contenant tous les fichiers de votre widget, prêts à être hébergés.</p>
+          <ol class="guide-steps">
+            <li>Cliquez sur <strong>"📦 Exporter ▼"</strong> puis <strong>"📁 Fichier ZIP"</strong></li>
+            <li>Un fichier <code>mon-widget-grist.zip</code> est téléchargé</li>
+            <li>Décompressez le fichier, vous obtenez :
+              <ul style="margin-top: 8px; margin-left: 20px;">
+                <li><code>index.html</code> - Page principale</li>
+                <li><code>widget.js</code> - Code JavaScript</li>
+                <li><code>style.css</code> - Styles CSS</li>
+                <li><code>formulas.py</code> - Aide-mémoire Python</li>
+                <li><code>README.md</code> - Instructions</li>
+              </ul>
+            </li>
+            <li>Hébergez ces fichiers sur <strong>GitHub Pages</strong>, <strong>Vercel</strong>, ou <strong>Netlify</strong></li>
+            <li>Dans Grist, utilisez l'URL de votre hébergement comme widget personnalisé</li>
+          </ol>
+          <div class="guide-note">
+            <strong>💡 Avantages :</strong> URL courte, mise à jour facile, professionnel.
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <h2>�📚 Fonctions Grist essentielles</h2>
           <div class="guide-code">
             <pre>// Initialiser le widget
 grist.ready({ requiredAccess: 'read table' });
