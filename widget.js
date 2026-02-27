@@ -1026,12 +1026,9 @@ async function exportAsZip() {
   var cssCode = editorCSS ? editorCSS.getValue() : '';
   var pythonCode = editorPython ? editorPython.getValue() : '';
   
-  // Load JSZip library dynamically
   if (typeof JSZip === 'undefined') {
-    var script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
-    document.head.appendChild(script);
-    await new Promise(function(resolve) { script.onload = resolve; });
+    showToast('Erreur: JSZip non chargé. Rechargez la page.', 'error');
+    return;
   }
   
   var zip = new JSZip();
