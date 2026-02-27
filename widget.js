@@ -562,6 +562,9 @@ require(['vs/editor/editor.main'], function() {
   renderApiReference();
   initResizer();
   
+  // Load sidebar state from localStorage
+  loadSidebarState();
+  
   // Load saved code if exists
   loadSavedCode();
   
@@ -639,6 +642,49 @@ function toggleSection(header) {
   var icon = header.querySelector('.toggle-icon');
   content.classList.toggle('collapsed');
   icon.textContent = content.classList.contains('collapsed') ? '▶' : '▼';
+  
+  // Save sidebar state
+  saveSidebarState();
+}
+
+function saveSidebarState() {
+  var state = {
+    columns: !document.getElementById('columns-list').classList.contains('collapsed'),
+    snippets: !document.getElementById('snippets-list').classList.contains('collapsed'),
+    templates: !document.getElementById('templates-list').classList.contains('collapsed'),
+    api: !document.getElementById('api-list').classList.contains('collapsed')
+  };
+  localStorage.setItem('codeEditorSidebarState', JSON.stringify(state));
+}
+
+function loadSidebarState() {
+  try {
+    var state = JSON.parse(localStorage.getItem('codeEditorSidebarState'));
+    if (!state) return;
+    
+    var sections = [
+      { id: 'columns-list', open: state.columns },
+      { id: 'snippets-list', open: state.snippets },
+      { id: 'templates-list', open: state.templates },
+      { id: 'api-list', open: state.api }
+    ];
+    
+    sections.forEach(function(s) {
+      var content = document.getElementById(s.id);
+      var header = content.previousElementSibling;
+      var icon = header.querySelector('.toggle-icon');
+      
+      if (s.open) {
+        content.classList.remove('collapsed');
+        icon.textContent = '▼';
+      } else {
+        content.classList.add('collapsed');
+        icon.textContent = '▶';
+      }
+    });
+  } catch(e) {
+    console.log('Could not load sidebar state');
+  }
 }
 
 function toggleConsole() {
