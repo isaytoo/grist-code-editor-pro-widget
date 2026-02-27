@@ -1092,9 +1092,20 @@ function generateWidgetHtml() {
   return fullHtml;
 }
 
+// Modern UTF-8 to Base64 encoding (replaces deprecated unescape)
+function utf8ToBase64(str) {
+  var encoder = new TextEncoder();
+  var data = encoder.encode(str);
+  var binary = '';
+  for (var i = 0; i < data.length; i++) {
+    binary += String.fromCharCode(data[i]);
+  }
+  return btoa(binary);
+}
+
 function exportAsDataUrl() {
   var fullHtml = generateWidgetHtml();
-  var base64 = btoa(unescape(encodeURIComponent(fullHtml)));
+  var base64 = utf8ToBase64(fullHtml);
   var dataUrl = 'data:text/html;base64,' + base64;
   
   // Copy to clipboard
@@ -1110,26 +1121,33 @@ function exportAsDataUrl() {
 }
 
 var JSZipLoaded = null;
+var JSZipLoading = null;
 
-async function loadJSZip() {
-  if (JSZipLoaded) return JSZipLoaded;
+function loadJSZip() {
+  if (JSZipLoaded) return Promise.resolve(JSZipLoaded);
+  if (JSZipLoading) return JSZipLoading;
   
-  // Load JSZip via eval to avoid AMD conflicts
-  var response = await fetch('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
-  var code = await response.text();
+  JSZipLoading = new Promise(function(resolve, reject) {
+    // Temporarily disable AMD to prevent conflicts with Monaco
+    var originalDefine = window.define;
+    window.define = undefined;
+    
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    script.onload = function() {
+      // Restore AMD
+      window.define = originalDefine;
+      JSZipLoaded = window.JSZip;
+      resolve(JSZipLoaded);
+    };
+    script.onerror = function() {
+      window.define = originalDefine;
+      reject(new Error('Failed to load JSZip'));
+    };
+    document.head.appendChild(script);
+  });
   
-  // Temporarily disable AMD
-  var originalDefine = window.define;
-  window.define = undefined;
-  
-  // Execute JSZip
-  eval(code);
-  
-  // Restore AMD
-  window.define = originalDefine;
-  
-  JSZipLoaded = window.JSZip;
-  return JSZipLoaded;
+  return JSZipLoading;
 }
 
 async function exportAsZip() {
