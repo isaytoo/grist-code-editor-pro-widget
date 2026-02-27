@@ -1020,14 +1020,42 @@ function exportAsDataUrl() {
   document.getElementById('export-menu').classList.remove('show');
 }
 
-async function exportAsZip() {
-  var jsCode = editorJS ? editorJS.getValue() : '';
-  var htmlCode = editorHTML ? editorHTML.getValue() : '';
-  var cssCode = editorCSS ? editorCSS.getValue() : '';
-  var pythonCode = editorPython ? editorPython.getValue() : '';
+var JSZipLoaded = null;
+
+async function loadJSZip() {
+  if (JSZipLoaded) return JSZipLoaded;
   
-  // Create index.html with proper structure
-  var indexHtml = `<!DOCTYPE html>
+  // Load JSZip via eval to avoid AMD conflicts
+  var response = await fetch('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+  var code = await response.text();
+  
+  // Temporarily disable AMD
+  var originalDefine = window.define;
+  window.define = undefined;
+  
+  // Execute JSZip
+  eval(code);
+  
+  // Restore AMD
+  window.define = originalDefine;
+  
+  JSZipLoaded = window.JSZip;
+  return JSZipLoaded;
+}
+
+async function exportAsZip() {
+  showToast('⏳ Préparation du ZIP...', 'info');
+  
+  try {
+    var JSZip = await loadJSZip();
+    
+    var jsCode = editorJS ? editorJS.getValue() : '';
+    var htmlCode = editorHTML ? editorHTML.getValue() : '';
+    var cssCode = editorCSS ? editorCSS.getValue() : '';
+    var pythonCode = editorPython ? editorPython.getValue() : '';
+    
+    // Create index.html with proper structure
+    var indexHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1042,13 +1070,12 @@ ${htmlCode.replace(/<html[^>]*>|<\/html>|<head[^>]*>[\s\S]*<\/head>|<body[^>]*>|
 </body>
 </html>`;
 
-  // Download files individually
-  downloadFile('index.html', indexHtml);
-  setTimeout(function() { downloadFile('widget.js', jsCode); }, 200);
-  setTimeout(function() { downloadFile('style.css', cssCode); }, 400);
-  setTimeout(function() { downloadFile('formulas.py', pythonCode); }, 600);
-  setTimeout(function() { 
-    downloadFile('README.md', `# Mon Widget Grist
+    var zip = new JSZip();
+    zip.file('index.html', indexHtml);
+    zip.file('widget.js', jsCode);
+    zip.file('style.css', cssCode);
+    zip.file('formulas.py', pythonCode);
+    zip.file('README.md', `# Mon Widget Grist
 
 Widget personnalisé créé avec Code Editor Pro.
 
@@ -1069,21 +1096,22 @@ Widget personnalisé créé avec Code Editor Pro.
 
 Code Editor Pro par gristup.fr
 `);
-  }, 800);
-  
-  showToast('✅ 5 fichiers téléchargés ! Placez-les dans un même dossier.', 'success');
-}
 
-function downloadFile(filename, content) {
-  var blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+    var content = await zip.generateAsync({ type: 'blob' });
+    var url = URL.createObjectURL(content);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'mon-widget-grist.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast('✅ Fichier ZIP téléchargé !', 'success');
+  } catch(e) {
+    console.error('Export error:', e);
+    showToast('❌ Erreur: ' + e.message, 'error');
+  }
 }
 
 function showToast(message, type) {
