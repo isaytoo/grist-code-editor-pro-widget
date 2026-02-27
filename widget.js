@@ -589,19 +589,25 @@ grist.onRecord(function(record) {
 
 // Get columns from records
 grist.onRecords(function(recs, mappings) {
+  console.log('onRecords received:', recs ? recs.length : 0, 'records');
   records = recs || [];
+  document.getElementById('status-records').textContent = records.length + ' enregistrements';
   if (recs && recs.length > 0) {
     columns = Object.keys(recs[0]).filter(function(k) { return k !== 'id' && !k.startsWith('_'); });
+    console.log('Columns detected:', columns);
     renderColumns();
   }
 });
 
 // Also try to get columns via column mappings
 grist.onRecord(function(rec, mappings) {
+  console.log('onRecord received:', rec);
   if (rec && Object.keys(rec).length > 1) {
+    document.getElementById('status-table').textContent = 'Table connectée';
     var newCols = Object.keys(rec).filter(function(k) { return k !== 'id' && !k.startsWith('_'); });
-    if (newCols.length > columns.length) {
+    if (newCols.length > 0 && (columns.length === 0 || newCols.length > columns.length)) {
       columns = newCols;
+      console.log('Columns from record:', columns);
       renderColumns();
     }
   }
