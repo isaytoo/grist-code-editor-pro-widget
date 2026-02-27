@@ -616,11 +616,29 @@ function switchView(view) {
     tab.classList.toggle('active', tab.dataset.view === view);
   });
   
-  if (view === 'preview-only') {
+  var mainContent = document.querySelector('.main-content');
+  var guideView = document.getElementById('guide-view');
+  var consoleArea = document.getElementById('console-area');
+  var statusBar = document.querySelector('.status-bar');
+  
+  if (view === 'guide') {
+    mainContent.style.display = 'none';
+    guideView.style.display = 'block';
+    consoleArea.style.display = 'none';
+    statusBar.style.display = 'none';
+  } else if (view === 'preview-only') {
+    mainContent.style.display = 'flex';
+    guideView.style.display = 'none';
+    consoleArea.style.display = 'flex';
+    statusBar.style.display = 'flex';
     document.querySelector('.sidebar').style.display = 'none';
     document.querySelector('.editor-area').style.display = 'none';
     document.getElementById('preview-area').style.width = '100%';
   } else {
+    mainContent.style.display = 'flex';
+    guideView.style.display = 'none';
+    consoleArea.style.display = 'flex';
+    statusBar.style.display = 'flex';
     document.querySelector('.sidebar').style.display = 'flex';
     document.querySelector('.editor-area').style.display = 'flex';
     document.getElementById('preview-area').style.width = '50%';
@@ -635,6 +653,14 @@ function switchEditorTab(tab) {
   document.querySelectorAll('.editor-pane').forEach(function(p) {
     p.classList.toggle('active', p.id === 'pane-' + tab);
   });
+  
+  // Force layout refresh for Monaco editors
+  setTimeout(function() {
+    if (tab === 'js' && editorJS) editorJS.layout();
+    if (tab === 'html' && editorHTML) editorHTML.layout();
+    if (tab === 'css' && editorCSS) editorCSS.layout();
+    if (tab === 'python' && editorPython) editorPython.layout();
+  }, 50);
 }
 
 function toggleSection(header) {

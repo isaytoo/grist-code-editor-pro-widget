@@ -574,6 +574,175 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #4c4c4c;
     }
+
+    /* ========== GUIDE VIEW ========== */
+    .guide-view {
+      flex: 1;
+      overflow-y: auto;
+      background: var(--bg-primary);
+      padding: 40px;
+    }
+
+    .guide-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .guide-view h1 {
+      font-size: 28px;
+      margin-bottom: 30px;
+      color: var(--text-primary);
+      border-bottom: 2px solid var(--accent-color);
+      padding-bottom: 15px;
+    }
+
+    .guide-section {
+      margin-bottom: 35px;
+    }
+
+    .guide-section h2 {
+      font-size: 20px;
+      color: var(--text-primary);
+      margin-bottom: 15px;
+    }
+
+    .guide-section p {
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .guide-note, .guide-warning {
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+
+    .guide-note {
+      background: rgba(14, 99, 156, 0.2);
+      border-left: 4px solid var(--accent-color);
+    }
+
+    .guide-warning {
+      background: rgba(241, 76, 76, 0.15);
+      border-left: 4px solid var(--error-color);
+    }
+
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .guide-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 15px;
+    }
+
+    .guide-card h3 {
+      font-size: 14px;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .guide-card p {
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .guide-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+
+    .guide-table th, .guide-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border: 1px solid var(--border-color);
+    }
+
+    .guide-table th {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .guide-table td {
+      color: var(--text-secondary);
+    }
+
+    .guide-steps {
+      padding-left: 20px;
+    }
+
+    .guide-steps li {
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    .guide-code {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .guide-code pre {
+      padding: 20px;
+      margin: 0;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 13px;
+      color: var(--text-primary);
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    .guide-faq details {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .guide-faq summary {
+      padding: 15px;
+      cursor: pointer;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .guide-faq summary:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .guide-faq details p {
+      padding: 0 15px 15px;
+      margin: 0;
+    }
+
+    .guide-footer {
+      text-align: center;
+      padding-top: 30px;
+      border-top: 1px solid var(--border-color);
+      margin-top: 40px;
+    }
+
+    .guide-footer a {
+      color: var(--accent-color);
+      text-decoration: none;
+    }
+
+    code {
+      background: var(--bg-tertiary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
@@ -588,12 +757,161 @@
         <div class="header-tabs">
           <button class="header-tab active" data-view="editor" onclick="switchView('editor')">Éditeur</button>
           <button class="header-tab" data-view="preview-only" onclick="switchView('preview-only')">Aperçu seul</button>
+          <button class="header-tab" data-view="guide" onclick="switchView('guide')">📖 Guide</button>
         </div>
       </div>
       <div class="header-actions">
         <button class="btn btn-secondary" onclick="resetCode()">🔄 Reset</button>
         <button class="btn btn-primary" onclick="runPreview()">▶️ Exécuter</button>
         <button class="btn btn-success" onclick="installWidget()">💾 Installer</button>
+      </div>
+    </div>
+
+    <!-- GUIDE VIEW -->
+    <div id="guide-view" class="guide-view" style="display:none;">
+      <div class="guide-container">
+        <h1>📖 Guide d'utilisation - Code Editor Pro</h1>
+        
+        <div class="guide-section">
+          <h2>🎯 À quoi sert ce widget ?</h2>
+          <p>Code Editor Pro vous permet de <strong>créer des widgets Grist personnalisés</strong> directement dans votre document, sans avoir besoin d'héberger de fichiers externes.</p>
+          <div class="guide-note">
+            <strong>💡 Idéal pour :</strong> Affichages personnalisés, dashboards simples, formulaires spécifiques, visualisations de données.
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <h2>🖥️ Interface</h2>
+          <div class="guide-grid">
+            <div class="guide-card">
+              <h3>📊 Colonnes disponibles</h3>
+              <p>Liste des colonnes de la table connectée. Cliquez pour insérer <code>record.NomColonne</code> dans votre code.</p>
+            </div>
+            <div class="guide-card">
+              <h3>📝 Snippets</h3>
+              <p>Exemples de code prêts à l'emploi. Cliquez pour remplacer votre code actuel.</p>
+            </div>
+            <div class="guide-card">
+              <h3>🎨 Templates</h3>
+              <p>Modèles de widgets complets (Dashboard KPI, Liste stylisée, etc.)</p>
+            </div>
+            <div class="guide-card">
+              <h3>📚 API Grist</h3>
+              <p>Référence des fonctions Grist disponibles avec autocomplétion.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <h2>📜 Onglets de code</h2>
+          <table class="guide-table">
+            <tr><th>Onglet</th><th>Description</th><th>Usage</th></tr>
+            <tr><td><strong>JavaScript</strong></td><td>Logique du widget</td><td>Interactions avec Grist API, manipulation des données</td></tr>
+            <tr><td><strong>HTML</strong></td><td>Structure de la page</td><td>Éléments visuels, conteneurs</td></tr>
+            <tr><td><strong>CSS</strong></td><td>Styles visuels</td><td>Couleurs, tailles, mise en page</td></tr>
+            <tr><td><strong>Python</strong></td><td>Formules Grist</td><td>Aide-mémoire pour les formules de colonnes (à copier dans Grist)</td></tr>
+          </table>
+        </div>
+
+        <div class="guide-section">
+          <h2>🔘 Boutons d'action</h2>
+          <table class="guide-table">
+            <tr><th>Bouton</th><th>Action</th></tr>
+            <tr><td><strong>🔄 Reset</strong></td><td>Réinitialise le code aux valeurs par défaut</td></tr>
+            <tr><td><strong>▶️ Exécuter</strong></td><td>Lance l'aperçu du widget (sans sauvegarder)</td></tr>
+            <tr><td><strong>💾 Installer</strong></td><td>Sauvegarde le code dans le document Grist</td></tr>
+          </table>
+          <div class="guide-warning">
+            <strong>⚠️ Important :</strong> Sans cliquer sur "Installer", votre code sera perdu au rechargement de la page !
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <h2>🚀 Démarrage rapide</h2>
+          <ol class="guide-steps">
+            <li><strong>Connectez une table</strong> - Sélectionnez une table dans les paramètres du widget Grist</li>
+            <li><strong>Choisissez un template</strong> - Cliquez sur un template dans la sidebar gauche</li>
+            <li><strong>Personnalisez</strong> - Modifiez le code JavaScript/HTML/CSS selon vos besoins</li>
+            <li><strong>Testez</strong> - Cliquez sur "Exécuter" pour voir le résultat</li>
+            <li><strong>Installez</strong> - Cliquez sur "Installer" pour sauvegarder</li>
+          </ol>
+        </div>
+
+        <div class="guide-section">
+          <h2>📚 Fonctions Grist essentielles</h2>
+          <div class="guide-code">
+            <pre>// Initialiser le widget
+grist.ready({ requiredAccess: 'read table' });
+
+// Écouter l'enregistrement sélectionné
+grist.onRecord(function(record) {
+  console.log('Enregistrement:', record);
+});
+
+// Écouter tous les enregistrements
+grist.onRecords(function(records) {
+  console.log('Tous les enregistrements:', records);
+});
+
+// Créer un enregistrement
+await grist.selectedTable.create({ fields: { Nom: 'Test' } });
+
+// Modifier un enregistrement
+await grist.selectedTable.update({ id: 1, fields: { Nom: 'Nouveau' } });
+
+// Supprimer un enregistrement
+await grist.selectedTable.destroy(1);</pre>
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <h2>🐍 Formules Python (pour colonnes Grist)</h2>
+          <div class="guide-code">
+            <pre># Référencer une colonne
+$Nom + " " + $Prenom
+
+# Condition
+"Urgent" if $Priorite == "haute" else "Normal"
+
+# Recherche (VLOOKUP)
+Clients.lookupOne(Email=$Email).Nom
+
+# Somme conditionnelle (SUMIF)
+sum(Ventes.lookupRecords(Statut="Validé").Montant)
+
+# Comptage
+len(Taches.lookupRecords(Statut="Terminé"))
+
+# Date du jour
+NOW()</pre>
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <h2>❓ FAQ</h2>
+          <div class="guide-faq">
+            <details>
+              <summary>Mon code ne s'affiche pas dans l'aperçu ?</summary>
+              <p>Vérifiez la console (bouton "Console") pour voir les erreurs JavaScript.</p>
+            </details>
+            <details>
+              <summary>Comment accéder aux données de la table ?</summary>
+              <p>Utilisez <code>grist.onRecord()</code> pour l'enregistrement sélectionné ou <code>grist.onRecords()</code> pour tous les enregistrements.</p>
+            </details>
+            <details>
+              <summary>Le widget ne se connecte pas à la table ?</summary>
+              <p>Assurez-vous d'avoir sélectionné une table dans les paramètres du widget (panneau de droite dans Grist).</p>
+            </details>
+            <details>
+              <summary>Comment sauvegarder mon travail ?</summary>
+              <p>Cliquez sur "Installer" pour sauvegarder le code dans le document Grist.</p>
+            </details>
+          </div>
+        </div>
+
+        <div class="guide-footer">
+          <p>© 2026 Said Hamadou (isaytoo) - <a href="https://gristup.fr" target="_blank">gristup.fr</a></p>
+        </div>
       </div>
     </div>
 
