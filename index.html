@@ -1,0 +1,718 @@
+<!--
+  Grist Code Editor Pro Widget
+  Copyright 2026 Said Hamadou (isaytoo)
+  Licensed under the Apache License, Version 2.0
+  https://github.com/isaytoo/grist-code-editor-pro-widget
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grist Code Editor Pro</title>
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <!-- Monaco Editor -->
+  <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-primary: #1e1e1e;
+      --bg-secondary: #252526;
+      --bg-tertiary: #2d2d30;
+      --border-color: #3c3c3c;
+      --text-primary: #cccccc;
+      --text-secondary: #858585;
+      --accent-color: #0e639c;
+      --accent-hover: #1177bb;
+      --success-color: #4ec9b0;
+      --warning-color: #dcdcaa;
+      --error-color: #f14c4c;
+      --info-color: #569cd6;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      overflow: hidden;
+    }
+
+    /* ========== LAYOUT ========== */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .logo-icon {
+      font-size: 20px;
+    }
+
+    .header-tabs {
+      display: flex;
+      gap: 4px;
+    }
+
+    .header-tab {
+      padding: 6px 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+
+    .header-tab:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .header-tab.active {
+      background: var(--accent-color);
+      color: white;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--accent-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: #3c3c3c;
+    }
+
+    .btn-success {
+      background: #2ea043;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #3fb950;
+    }
+
+    /* ========== MAIN CONTENT ========== */
+    .main-content {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ========== SIDEBAR ========== */
+    .sidebar {
+      width: 280px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-section {
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .sidebar-header:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .sidebar-content {
+      padding: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .sidebar-content.collapsed {
+      display: none;
+    }
+
+    /* Columns list */
+    .column-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .column-item:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .column-type {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+    }
+
+    .column-type.text { background: #264f78; color: #9cdcfe; }
+    .column-type.number { background: #4e3a1a; color: #dcdcaa; }
+    .column-type.date { background: #3a1a4e; color: #c586c0; }
+    .column-type.bool { background: #1a4e3a; color: #4ec9b0; }
+    .column-type.ref { background: #4e1a1a; color: #f14c4c; }
+
+    /* Snippets list */
+    .snippet-item {
+      padding: 8px 10px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s;
+      border-left: 3px solid transparent;
+    }
+
+    .snippet-item:hover {
+      background: var(--bg-tertiary);
+      border-left-color: var(--accent-color);
+    }
+
+    .snippet-title {
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .snippet-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    /* Templates list */
+    .template-item {
+      padding: 10px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s;
+      background: var(--bg-tertiary);
+      margin-bottom: 6px;
+    }
+
+    .template-item:hover {
+      background: #3c3c3c;
+    }
+
+    .template-icon {
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+
+    .template-title {
+      font-weight: 500;
+    }
+
+    /* ========== EDITOR AREA ========== */
+    .editor-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .editor-tabs {
+      display: flex;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .editor-tab {
+      padding: 8px 16px;
+      font-size: 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .editor-tab:hover {
+      color: var(--text-primary);
+      background: var(--bg-secondary);
+    }
+
+    .editor-tab.active {
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      border-bottom-color: var(--accent-color);
+    }
+
+    .editor-container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .editor-pane {
+      flex: 1;
+      display: none;
+    }
+
+    .editor-pane.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #editor-js, #editor-html, #editor-css {
+      flex: 1;
+    }
+
+    /* ========== PREVIEW AREA ========== */
+    .preview-area {
+      width: 50%;
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      background: white;
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .preview-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .preview-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .preview-btn {
+      padding: 4px 8px;
+      font-size: 11px;
+      background: var(--bg-tertiary);
+      border: none;
+      color: var(--text-primary);
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .preview-btn:hover {
+      background: #3c3c3c;
+    }
+
+    .preview-frame {
+      flex: 1;
+      border: none;
+      background: white;
+    }
+
+    /* ========== CONSOLE ========== */
+    .console-area {
+      height: 150px;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .console-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .console-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .console-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .console-btn {
+      padding: 2px 8px;
+      font-size: 10px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 3px;
+    }
+
+    .console-btn:hover {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    .console-output {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 12px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+    }
+
+    .console-line {
+      padding: 2px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .console-line.log { color: var(--text-primary); }
+    .console-line.info { color: var(--info-color); }
+    .console-line.warn { color: var(--warning-color); }
+    .console-line.error { color: var(--error-color); }
+
+    .console-time {
+      color: var(--text-secondary);
+      font-size: 10px;
+    }
+
+    /* ========== STATUS BAR ========== */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 12px;
+      background: var(--accent-color);
+      font-size: 11px;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .status-left, .status-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ========== RESIZER ========== */
+    .resizer {
+      width: 4px;
+      background: var(--border-color);
+      cursor: col-resize;
+      transition: background 0.15s;
+    }
+
+    .resizer:hover {
+      background: var(--accent-color);
+    }
+
+    /* ========== TOAST ========== */
+    .toast-container {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      padding: 12px 16px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      font-size: 13px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn 0.3s ease;
+    }
+
+    .toast.success { border-left: 3px solid var(--success-color); }
+    .toast.error { border-left: 3px solid var(--error-color); }
+    .toast.info { border-left: 3px solid var(--info-color); }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* ========== LOADING ========== */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--bg-tertiary);
+      border-top-color: var(--accent-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ========== SCROLLBAR ========== */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4c4c4c;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- HEADER -->
+    <div class="header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">⚡</span>
+          <span>Code Editor Pro</span>
+        </div>
+        <div class="header-tabs">
+          <button class="header-tab active" data-view="editor" onclick="switchView('editor')">Éditeur</button>
+          <button class="header-tab" data-view="preview-only" onclick="switchView('preview-only')">Aperçu seul</button>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" onclick="resetCode()">🔄 Reset</button>
+        <button class="btn btn-primary" onclick="runPreview()">▶️ Exécuter</button>
+        <button class="btn btn-success" onclick="installWidget()">💾 Installer</button>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <!-- SIDEBAR -->
+      <div class="sidebar">
+        <!-- Columns Section -->
+        <div class="sidebar-section">
+          <div class="sidebar-header" onclick="toggleSection(this)">
+            <span>📊 Colonnes disponibles</span>
+            <span class="toggle-icon">▼</span>
+          </div>
+          <div class="sidebar-content" id="columns-list">
+            <div style="color: var(--text-secondary); font-size: 11px; padding: 8px;">
+              Connectez une table pour voir les colonnes...
+            </div>
+          </div>
+        </div>
+
+        <!-- Snippets Section -->
+        <div class="sidebar-section">
+          <div class="sidebar-header" onclick="toggleSection(this)">
+            <span>📝 Snippets</span>
+            <span class="toggle-icon">▼</span>
+          </div>
+          <div class="sidebar-content" id="snippets-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Templates Section -->
+        <div class="sidebar-section">
+          <div class="sidebar-header" onclick="toggleSection(this)">
+            <span>🎨 Templates</span>
+            <span class="toggle-icon">▼</span>
+          </div>
+          <div class="sidebar-content" id="templates-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- API Reference Section -->
+        <div class="sidebar-section" style="flex:1;">
+          <div class="sidebar-header" onclick="toggleSection(this)">
+            <span>📚 API Grist</span>
+            <span class="toggle-icon">▼</span>
+          </div>
+          <div class="sidebar-content" id="api-list" style="max-height:none;">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- EDITOR AREA -->
+      <div class="editor-area">
+        <div class="editor-tabs">
+          <button class="editor-tab active" data-tab="js" onclick="switchEditorTab('js')">📜 JavaScript</button>
+          <button class="editor-tab" data-tab="html" onclick="switchEditorTab('html')">🌐 HTML</button>
+          <button class="editor-tab" data-tab="css" onclick="switchEditorTab('css')">🎨 CSS</button>
+        </div>
+        <div class="editor-container">
+          <div class="editor-pane active" id="pane-js">
+            <div id="editor-js"></div>
+          </div>
+          <div class="editor-pane" id="pane-html">
+            <div id="editor-html"></div>
+          </div>
+          <div class="editor-pane" id="pane-css">
+            <div id="editor-css"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESIZER -->
+      <div class="resizer" id="resizer"></div>
+
+      <!-- PREVIEW AREA -->
+      <div class="preview-area" id="preview-area">
+        <div class="preview-header">
+          <span class="preview-title">📱 Aperçu</span>
+          <div class="preview-actions">
+            <button class="preview-btn" onclick="runPreview()">🔄 Rafraîchir</button>
+            <button class="preview-btn" onclick="toggleConsole()">📋 Console</button>
+          </div>
+        </div>
+        <iframe id="preview-frame" class="preview-frame"></iframe>
+      </div>
+    </div>
+
+    <!-- CONSOLE -->
+    <div class="console-area" id="console-area">
+      <div class="console-header">
+        <span class="console-title">Console</span>
+        <div class="console-actions">
+          <button class="console-btn" onclick="clearConsole()">Effacer</button>
+        </div>
+      </div>
+      <div class="console-output" id="console-output"></div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+      <div class="status-left">
+        <span class="status-item">📄 <span id="status-table">Aucune table</span></span>
+        <span class="status-item">📊 <span id="status-records">0 enregistrements</span></span>
+      </div>
+      <div class="status-right">
+        <span class="status-item" id="status-saved">Non sauvegardé</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- FOOTER -->
+  <footer style="position: fixed; bottom: 0; left: 0; right: 0; background: #1e1e1e; border-top: 1px solid #3c3c3c; padding: 4px 12px; font-size: 0.7em; color: #858585; display: flex; justify-content: space-between; z-index: 1000;">
+    <span>© 2026 Said Hamadou (isaytoo)</span>
+    <a href="https://gristup.fr" target="_blank" style="color: #569cd6; text-decoration: none;">gristup.fr</a>
+  </footer>
+
+  <!-- Monaco Editor Loader -->
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+  <script src="widget.js"></script>
+</body>
+</html>
