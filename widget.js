@@ -851,8 +851,42 @@ function runPreview() {
     htmlCode = htmlCode.replace('</head>', '<style>' + cssCode + '</style></head>');
   }
   
-  // Add Grist API and custom JS
-  var fullHTML = htmlCode.replace('</body>', 
+  // Console interceptor script
+  var consoleInterceptor = `
+    <script>
+      (function() {
+        var origLog = console.log;
+        var origWarn = console.warn;
+        var origError = console.error;
+        var origInfo = console.info;
+        
+        function sendToParent(type, args) {
+          try {
+            parent.postMessage({
+              type: 'console',
+              level: type,
+              args: Array.from(args).map(function(a) {
+                return typeof a === 'object' ? JSON.stringify(a) : String(a);
+              })
+            }, '*');
+          } catch(e) {}
+        }
+        
+        console.log = function() { sendToParent('log', arguments); origLog.apply(console, arguments); };
+        console.warn = function() { sendToParent('warn', arguments); origWarn.apply(console, arguments); };
+        console.error = function() { sendToParent('error', arguments); origError.apply(console, arguments); };
+        console.info = function() { sendToParent('info', arguments); origInfo.apply(console, arguments); };
+        
+        window.onerror = function(msg, url, line, col, error) {
+          sendToParent('error', ['Error: ' + msg + ' (line ' + line + ')']);
+        };
+      })();
+    <\/script>
+  `;
+  
+  // Add console interceptor, Grist API and custom JS
+  var fullHTML = htmlCode.replace('</head>', consoleInterceptor + '</head>');
+  fullHTML = fullHTML.replace('</body>', 
     '<script src="https://docs.getgrist.com/grist-plugin-api.js"><\/script>' +
     '<script>' + jsCode + '<\/script>' +
     '</body>'
@@ -865,24 +899,15 @@ function runPreview() {
   var frame = document.getElementById('preview-frame');
   frame.src = url;
   
-  // Intercept console
-  frame.onload = function() {
-    try {
-      var win = frame.contentWindow;
-      var origLog = win.console.log;
-      var origWarn = win.console.warn;
-      var origError = win.console.error;
-      var origInfo = win.console.info;
-      
-      win.console.log = function() { logToConsole('log', ...arguments); origLog.apply(win.console, arguments); };
-      win.console.warn = function() { logToConsole('warn', ...arguments); origWarn.apply(win.console, arguments); };
-      win.console.error = function() { logToConsole('error', ...arguments); origError.apply(win.console, arguments); };
-      win.console.info = function() { logToConsole('info', ...arguments); origInfo.apply(win.console, arguments); };
-    } catch(e) {}
-  };
-  
   showToast('Aperçu mis à jour', 'info');
 }
+
+// Listen for console messages from iframe
+window.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'console') {
+    logToConsole(event.data.level, ...event.data.args);
+  }
+});
 
 function resetCode() {
   if (editorJS) editorJS.setValue(defaultJS);
