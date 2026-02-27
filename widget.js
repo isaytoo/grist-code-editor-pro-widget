@@ -1026,13 +1026,6 @@ async function exportAsZip() {
   var cssCode = editorCSS ? editorCSS.getValue() : '';
   var pythonCode = editorPython ? editorPython.getValue() : '';
   
-  if (typeof JSZip === 'undefined') {
-    showToast('Erreur: JSZip non chargé. Rechargez la page.', 'error');
-    return;
-  }
-  
-  var zip = new JSZip();
-  
   // Create index.html with proper structure
   var indexHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -1049,11 +1042,13 @@ ${htmlCode.replace(/<html[^>]*>|<\/html>|<head[^>]*>[\s\S]*<\/head>|<body[^>]*>|
 </body>
 </html>`;
 
-  zip.file('index.html', indexHtml);
-  zip.file('widget.js', jsCode);
-  zip.file('style.css', cssCode);
-  zip.file('formulas.py', pythonCode);
-  zip.file('README.md', `# Mon Widget Grist
+  // Download files individually
+  downloadFile('index.html', indexHtml);
+  setTimeout(function() { downloadFile('widget.js', jsCode); }, 200);
+  setTimeout(function() { downloadFile('style.css', cssCode); }, 400);
+  setTimeout(function() { downloadFile('formulas.py', pythonCode); }, 600);
+  setTimeout(function() { 
+    downloadFile('README.md', `# Mon Widget Grist
 
 Widget personnalisé créé avec Code Editor Pro.
 
@@ -1065,29 +1060,30 @@ Widget personnalisé créé avec Code Editor Pro.
 
 ## Fichiers
 
-- \`index.html\` - Page principale du widget
-- \`widget.js\` - Code JavaScript
-- \`style.css\` - Styles CSS
-- \`formulas.py\` - Aide-mémoire formules Python Grist
+- index.html - Page principale du widget
+- widget.js - Code JavaScript
+- style.css - Styles CSS
+- formulas.py - Aide-mémoire formules Python Grist
 
 ## Créé avec
 
-[Code Editor Pro](https://github.com/isaytoo/grist-code-editor-pro-widget) par [gristup.fr](https://gristup.fr)
+Code Editor Pro par gristup.fr
 `);
+  }, 800);
+  
+  showToast('✅ 5 fichiers téléchargés ! Placez-les dans un même dossier.', 'success');
+}
 
-  // Generate and download ZIP
-  var content = await zip.generateAsync({ type: 'blob' });
-  var url = URL.createObjectURL(content);
+function downloadFile(filename, content) {
+  var blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
-  a.download = 'mon-widget-grist.zip';
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  
-  showToast('✅ Fichier ZIP téléchargé !', 'success');
-  document.getElementById('export-menu').classList.remove('show');
 }
 
 function showToast(message, type) {
