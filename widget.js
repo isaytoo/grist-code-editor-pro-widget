@@ -955,6 +955,144 @@ function initResizer() {
 // TOAST
 // =============================================================================
 
+// =============================================================================
+// EXPORT FUNCTIONS
+// =============================================================================
+
+function toggleExportMenu() {
+  var menu = document.getElementById('export-menu');
+  menu.classList.toggle('show');
+  
+  // Close menu when clicking outside
+  if (menu.classList.contains('show')) {
+    setTimeout(function() {
+      document.addEventListener('click', closeExportMenuOnClickOutside);
+    }, 10);
+  }
+}
+
+function closeExportMenuOnClickOutside(e) {
+  var menu = document.getElementById('export-menu');
+  var dropdown = e.target.closest('.dropdown');
+  if (!dropdown) {
+    menu.classList.remove('show');
+    document.removeEventListener('click', closeExportMenuOnClickOutside);
+  }
+}
+
+function generateWidgetHtml() {
+  var jsCode = editorJS ? editorJS.getValue() : '';
+  var htmlCode = editorHTML ? editorHTML.getValue() : '';
+  var cssCode = editorCSS ? editorCSS.getValue() : '';
+  
+  // Inject CSS into HTML
+  var fullHtml = htmlCode;
+  if (fullHtml.includes('<style id="custom-css">')) {
+    fullHtml = fullHtml.replace('<style id="custom-css"></style>', '<style id="custom-css">' + cssCode + '</style>');
+  } else if (fullHtml.includes('</head>')) {
+    fullHtml = fullHtml.replace('</head>', '<style>' + cssCode + '</style></head>');
+  }
+  
+  // Add Grist API and custom JS
+  fullHtml = fullHtml.replace('</body>', 
+    '<script src="https://docs.getgrist.com/grist-plugin-api.js"><\/script>' +
+    '<script>' + jsCode + '<\/script>' +
+    '</body>'
+  );
+  
+  return fullHtml;
+}
+
+function exportAsDataUrl() {
+  var fullHtml = generateWidgetHtml();
+  var base64 = btoa(unescape(encodeURIComponent(fullHtml)));
+  var dataUrl = 'data:text/html;base64,' + base64;
+  
+  // Copy to clipboard
+  navigator.clipboard.writeText(dataUrl).then(function() {
+    showToast('✅ URL Data copiée dans le presse-papier !', 'success');
+    showToast('Collez cette URL dans "Widget personnalisé" de Grist', 'info');
+  }).catch(function(err) {
+    // Fallback: show in prompt
+    prompt('Copiez cette URL Data:', dataUrl);
+  });
+  
+  document.getElementById('export-menu').classList.remove('show');
+}
+
+async function exportAsZip() {
+  var jsCode = editorJS ? editorJS.getValue() : '';
+  var htmlCode = editorHTML ? editorHTML.getValue() : '';
+  var cssCode = editorCSS ? editorCSS.getValue() : '';
+  var pythonCode = editorPython ? editorPython.getValue() : '';
+  
+  // Load JSZip library dynamically
+  if (typeof JSZip === 'undefined') {
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+    document.head.appendChild(script);
+    await new Promise(function(resolve) { script.onload = resolve; });
+  }
+  
+  var zip = new JSZip();
+  
+  // Create index.html with proper structure
+  var indexHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon Widget Grist</title>
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"><\/script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+${htmlCode.replace(/<html[^>]*>|<\/html>|<head[^>]*>[\s\S]*<\/head>|<body[^>]*>|<\/body>/gi, '').trim()}
+  <script src="widget.js"><\/script>
+</body>
+</html>`;
+
+  zip.file('index.html', indexHtml);
+  zip.file('widget.js', jsCode);
+  zip.file('style.css', cssCode);
+  zip.file('formulas.py', pythonCode);
+  zip.file('README.md', `# Mon Widget Grist
+
+Widget personnalisé créé avec Code Editor Pro.
+
+## Utilisation
+
+1. Hébergez ces fichiers sur GitHub Pages, Vercel, ou Netlify
+2. Dans Grist, ajoutez un widget personnalisé
+3. Collez l'URL de votre hébergement
+
+## Fichiers
+
+- \`index.html\` - Page principale du widget
+- \`widget.js\` - Code JavaScript
+- \`style.css\` - Styles CSS
+- \`formulas.py\` - Aide-mémoire formules Python Grist
+
+## Créé avec
+
+[Code Editor Pro](https://github.com/isaytoo/grist-code-editor-pro-widget) par [gristup.fr](https://gristup.fr)
+`);
+
+  // Generate and download ZIP
+  var content = await zip.generateAsync({ type: 'blob' });
+  var url = URL.createObjectURL(content);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'mon-widget-grist.zip';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast('✅ Fichier ZIP téléchargé !', 'success');
+  document.getElementById('export-menu').classList.remove('show');
+}
+
 function showToast(message, type) {
   type = type || 'info';
   var container = document.getElementById('toast-container');

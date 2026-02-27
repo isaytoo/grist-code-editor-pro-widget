@@ -744,6 +744,55 @@
       font-family: 'Consolas', 'Monaco', monospace;
       font-size: 12px;
     }
+
+    /* ========== DROPDOWN ========== */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 100;
+      min-width: 180px;
+      margin-top: 4px;
+    }
+
+    .dropdown-menu.show {
+      display: block;
+    }
+
+    .dropdown-menu button {
+      display: block;
+      width: 100%;
+      padding: 10px 14px;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .dropdown-menu button:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .dropdown-menu button:first-child {
+      border-radius: 6px 6px 0 0;
+    }
+
+    .dropdown-menu button:last-child {
+      border-radius: 0 0 6px 6px;
+    }
   </style>
 </head>
 <body>
@@ -765,6 +814,13 @@
         <button class="btn btn-secondary" onclick="resetCode()">🔄 Reset</button>
         <button class="btn btn-primary" onclick="runPreview()">▶️ Exécuter</button>
         <button class="btn btn-success" onclick="installWidget()">💾 Installer</button>
+        <div class="dropdown">
+          <button class="btn btn-secondary" onclick="toggleExportMenu()">📦 Exporter ▼</button>
+          <div class="dropdown-menu" id="export-menu">
+            <button onclick="exportAsDataUrl()">🔗 URL Data (copier)</button>
+            <button onclick="exportAsZip()">📁 Fichier ZIP</button>
+          </div>
+        </div>
       </div>
     </div>
 
