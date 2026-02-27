@@ -1092,32 +1092,23 @@ function generateWidgetHtml() {
   return fullHtml;
 }
 
-// Modern UTF-8 to Base64 encoding (replaces deprecated unescape)
-function utf8ToBase64(str) {
-  var encoder = new TextEncoder();
-  var data = encoder.encode(str);
-  var binary = '';
-  for (var i = 0; i < data.length; i++) {
-    binary += String.fromCharCode(data[i]);
-  }
-  return btoa(binary);
-}
-
 function exportAsDataUrl() {
   var fullHtml = generateWidgetHtml();
-  var base64 = utf8ToBase64(fullHtml);
-  var dataUrl = 'data:text/html;base64,' + base64;
-  
-  // Copy to clipboard
-  navigator.clipboard.writeText(dataUrl).then(function() {
-    showToast('✅ URL Data copiée dans le presse-papier !', 'success');
-    showToast('Collez cette URL dans "Widget personnalisé" de Grist', 'info');
-  }).catch(function(err) {
-    // Fallback: show in prompt
-    prompt('Copiez cette URL Data:', dataUrl);
-  });
-  
-  document.getElementById('export-menu').classList.remove('show');
+  // Use Blob and FileReader for safe Base64 encoding
+  var blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+  var reader = new FileReader();
+  reader.onload = function() {
+    var dataUrl = reader.result;
+    // Copy to clipboard
+    navigator.clipboard.writeText(dataUrl).then(function() {
+      showToast('✅ URL Data copiée dans le presse-papier !', 'success');
+      showToast('Collez cette URL dans "Widget personnalisé" de Grist', 'info');
+    }).catch(function(err) {
+      prompt('Copiez cette URL Data:', dataUrl);
+    });
+    document.getElementById('export-menu').classList.remove('show');
+  };
+  reader.readAsDataURL(blob);
 }
 
 var JSZipLoaded = null;
