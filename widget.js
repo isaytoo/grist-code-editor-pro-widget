@@ -580,10 +580,10 @@ grist.onRecords(function(recs, mappings) {
   document.getElementById('status-records').textContent = records.length + ' enregistrements';
 });
 
-grist.getTable().then(function(table) {
-  if (table) {
-    tableName = table;
-    document.getElementById('status-table').textContent = table;
+// Get table name when available
+grist.onRecord(function(record) {
+  if (record && record.id) {
+    document.getElementById('status-table').textContent = 'Table connectée';
   }
 });
 
