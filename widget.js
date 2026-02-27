@@ -587,11 +587,23 @@ grist.onRecord(function(record) {
   }
 });
 
-// Get columns
-grist.onRecords(function(recs) {
+// Get columns from records
+grist.onRecords(function(recs, mappings) {
+  records = recs || [];
   if (recs && recs.length > 0) {
-    columns = Object.keys(recs[0]).filter(function(k) { return k !== 'id'; });
+    columns = Object.keys(recs[0]).filter(function(k) { return k !== 'id' && !k.startsWith('_'); });
     renderColumns();
+  }
+});
+
+// Also try to get columns via column mappings
+grist.onRecord(function(rec, mappings) {
+  if (rec && Object.keys(rec).length > 1) {
+    var newCols = Object.keys(rec).filter(function(k) { return k !== 'id' && !k.startsWith('_'); });
+    if (newCols.length > columns.length) {
+      columns = newCols;
+      renderColumns();
+    }
   }
 });
 
