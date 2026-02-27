@@ -994,6 +994,18 @@ NOW()</pre>
     <div class="main-content">
       <!-- SIDEBAR -->
       <div class="sidebar">
+        <!-- Table Selector -->
+        <div class="sidebar-section">
+          <div class="sidebar-header">
+            <span>📋 Table source</span>
+          </div>
+          <div class="sidebar-content" style="padding: 8px;">
+            <select id="table-selector" onchange="selectTable(this.value)" style="width: 100%; padding: 8px; border-radius: 4px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); font-size: 12px;">
+              <option value="">Chargement...</option>
+            </select>
+          </div>
+        </div>
+
         <!-- Columns Section -->
         <div class="sidebar-section">
           <div class="sidebar-header" onclick="toggleSection(this)">
@@ -1002,7 +1014,7 @@ NOW()</pre>
           </div>
           <div class="sidebar-content collapsed" id="columns-list">
             <div style="color: var(--text-secondary); font-size: 11px; padding: 8px;">
-              Connectez une table pour voir les colonnes...
+              Sélectionnez une table...
             </div>
           </div>
         </div>

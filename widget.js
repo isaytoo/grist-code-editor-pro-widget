@@ -18,6 +18,8 @@ let columns = [];
 let records = [];
 let tableName = '';
 let isInstalled = false;
+let availableTables = [];
+let selectedTableId = '';
 
 // =============================================================================
 // GRIST API DEFINITIONS (for autocomplete)
@@ -575,43 +577,87 @@ require(['vs/editor/editor.main'], function() {
 // Initialize Grist
 grist.ready({ requiredAccess: 'full' });
 
-grist.onRecords(function(recs, mappings) {
-  records = recs || [];
-  document.getElementById('status-records').textContent = records.length + ' enregistrements';
-});
-
-// Get table name when available
-grist.onRecord(function(record) {
-  if (record && record.id) {
-    document.getElementById('status-table').textContent = 'Table connectée';
-  }
-});
-
-// Get columns from records
-grist.onRecords(function(recs, mappings) {
-  console.log('onRecords received:', recs ? recs.length : 0, 'records');
-  records = recs || [];
-  document.getElementById('status-records').textContent = records.length + ' enregistrements';
-  if (recs && recs.length > 0) {
-    columns = Object.keys(recs[0]).filter(function(k) { return k !== 'id' && !k.startsWith('_'); });
-    console.log('Columns detected:', columns);
-    renderColumns();
-  }
-});
-
-// Also try to get columns via column mappings
-grist.onRecord(function(rec, mappings) {
-  console.log('onRecord received:', rec);
-  if (rec && Object.keys(rec).length > 1) {
-    document.getElementById('status-table').textContent = 'Table connectée';
-    var newCols = Object.keys(rec).filter(function(k) { return k !== 'id' && !k.startsWith('_'); });
-    if (newCols.length > 0 && (columns.length === 0 || newCols.length > columns.length)) {
-      columns = newCols;
-      console.log('Columns from record:', columns);
-      renderColumns();
+// Load available tables
+async function loadTables() {
+  try {
+    var tables = await grist.docApi.listTables();
+    console.log('Tables found:', tables);
+    availableTables = tables || [];
+    
+    var selector = document.getElementById('table-selector');
+    selector.innerHTML = '<option value="">-- Sélectionnez une table --</option>';
+    
+    availableTables.forEach(function(t) {
+      var opt = document.createElement('option');
+      opt.value = t;
+      opt.textContent = t;
+      selector.appendChild(opt);
+    });
+    
+    // Restore saved table selection
+    var savedTable = localStorage.getItem('codeEditorSelectedTable');
+    if (savedTable && availableTables.includes(savedTable)) {
+      selector.value = savedTable;
+      selectTable(savedTable);
     }
+  } catch(e) {
+    console.error('Error loading tables:', e);
+    document.getElementById('table-selector').innerHTML = '<option value="">Erreur de chargement</option>';
   }
-});
+}
+
+// Select a table and load its columns
+async function selectTable(tableId) {
+  if (!tableId) {
+    columns = [];
+    records = [];
+    renderColumns();
+    return;
+  }
+  
+  selectedTableId = tableId;
+  localStorage.setItem('codeEditorSelectedTable', tableId);
+  document.getElementById('status-table').textContent = tableId;
+  
+  try {
+    // Fetch table data
+    var data = await grist.docApi.fetchTable(tableId);
+    console.log('Table data:', data);
+    
+    if (data && data.id && data.id.length > 0) {
+      // Get columns (all keys except 'id' and 'manualSort')
+      columns = Object.keys(data).filter(function(k) { 
+        return k !== 'id' && k !== 'manualSort' && !k.startsWith('_'); 
+      });
+      console.log('Columns:', columns);
+      
+      // Convert to records array
+      records = [];
+      for (var i = 0; i < data.id.length; i++) {
+        var rec = { id: data.id[i] };
+        columns.forEach(function(col) {
+          rec[col] = data[col] ? data[col][i] : null;
+        });
+        records.push(rec);
+      }
+      
+      document.getElementById('status-records').textContent = records.length + ' enregistrements';
+      renderColumns();
+      
+      // Open columns section
+      var colSection = document.getElementById('columns-list');
+      var colHeader = colSection.previousElementSibling;
+      colSection.classList.remove('collapsed');
+      colHeader.querySelector('.toggle-icon').textContent = '▼';
+    }
+  } catch(e) {
+    console.error('Error fetching table:', e);
+    showToast('Erreur: ' + e.message, 'error');
+  }
+}
+
+// Load tables on startup
+setTimeout(loadTables, 500);
 
 // Load saved options
 grist.onOptions(function(options) {
