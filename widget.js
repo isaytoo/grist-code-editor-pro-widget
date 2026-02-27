@@ -12,6 +12,7 @@
 let editorJS = null;
 let editorHTML = null;
 let editorCSS = null;
+let editorPython = null;
 let currentTab = 'js';
 let columns = [];
 let records = [];
@@ -21,6 +22,33 @@ let isInstalled = false;
 // =============================================================================
 // GRIST API DEFINITIONS (for autocomplete)
 // =============================================================================
+
+// =============================================================================
+// PYTHON GRIST FORMULAS (for autocomplete)
+// =============================================================================
+
+const pythonGristFormulas = [
+  { name: '$Column', desc: 'Référence une colonne', snippet: '$ColumnName' },
+  { name: 'lookupOne', desc: 'Recherche un enregistrement', snippet: 'Table.lookupOne(Column=$Value)' },
+  { name: 'lookupRecords', desc: 'Recherche plusieurs enregistrements', snippet: 'Table.lookupRecords(Column=$Value)' },
+  { name: 'Table.all', desc: 'Tous les enregistrements', snippet: 'Table.all' },
+  { name: 'sum()', desc: 'Somme de valeurs', snippet: 'sum(Table.lookupRecords(Condition).Column)' },
+  { name: 'len()', desc: 'Nombre d\'éléments', snippet: 'len(Table.lookupRecords(Condition))' },
+  { name: 'max()', desc: 'Valeur maximum', snippet: 'max(Table.all.Column)' },
+  { name: 'min()', desc: 'Valeur minimum', snippet: 'min(Table.all.Column)' },
+  { name: 'NOW()', desc: 'Date et heure actuelles', snippet: 'NOW()' },
+  { name: 'TODAY()', desc: 'Date du jour', snippet: 'TODAY()' },
+  { name: 'DATEADD', desc: 'Ajouter à une date', snippet: 'DATEADD($Date, days=7)' },
+  { name: 'DATEDIF', desc: 'Différence entre dates', snippet: 'DATEDIF($DateDebut, $DateFin, "D")' },
+  { name: 'strftime', desc: 'Formater une date', snippet: '$Date.strftime("%d/%m/%Y")' },
+  { name: 'user.Email', desc: 'Email utilisateur (trigger)', snippet: 'user.Email' },
+  { name: 'user.Name', desc: 'Nom utilisateur (trigger)', snippet: 'user.Name' },
+  { name: 'rec.id', desc: 'ID enregistrement courant', snippet: 'rec.id' },
+  { name: 'if else', desc: 'Condition', snippet: '"Oui" if $Condition else "Non"' },
+  { name: 'CONTAINS', desc: 'Contient (texte)', snippet: 'CONTAINS($Text, "recherche")' },
+  { name: 'UPPER/LOWER', desc: 'Majuscules/Minuscules', snippet: '$Text.upper()' },
+  { name: 'CONCATENATE', desc: 'Concaténer', snippet: '$Col1 + " " + $Col2' },
+];
 
 const gristApiDefinitions = [
   { name: 'grist.ready', desc: 'Initialise le widget', snippet: "grist.ready({ requiredAccess: 'full' });" },
@@ -319,6 +347,48 @@ const defaultHTML = `<!DOCTYPE html>
 </body>
 </html>`;
 
+const defaultPython = `# Formules Python pour Grist
+# Ce code est destiné à être copié dans les colonnes de formules Grist
+# Il ne s'exécute PAS dans ce widget, mais dans Grist directement
+
+# ============================================
+# EXEMPLES DE FORMULES GRIST
+# ============================================
+
+# Formule simple - référencer une autre colonne
+$Nom + " " + $Prenom
+
+# Calcul conditionnel
+"Urgent" if $Priorite == "haute" else "Normal"
+
+# Somme avec condition (SUMIF)
+sum(Table.lookupRecords(Statut="Actif").Montant)
+
+# Recherche (VLOOKUP)
+Clients.lookupOne(Email=$Email).Nom
+
+# Date du jour
+NOW()
+
+# Formatage de date
+$Date.strftime("%d/%m/%Y") if $Date else ""
+
+# Liste de valeurs uniques
+list(set(Table.all.Categorie))
+
+# Comptage
+len(Table.lookupRecords(Statut="Terminé"))
+
+# Moyenne
+sum(Table.all.Score) / len(Table.all) if len(Table.all) > 0 else 0
+
+# Trigger formula (user info)
+user.Email  # Nécessite recalcWhen=2
+
+# Accès à l'enregistrement courant
+rec.id  # ID de l'enregistrement
+`;
+
 const defaultCSS = `/* Styles de votre widget */
 * {
   box-sizing: border-box;
@@ -382,6 +452,32 @@ header h1 {
 require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
 
 require(['vs/editor/editor.main'], function() {
+  // Register Python Grist completions
+  monaco.languages.registerCompletionItemProvider('python', {
+    provideCompletionItems: function(model, position) {
+      var word = model.getWordUntilPosition(position);
+      var range = {
+        startLineNumber: position.lineNumber,
+        endLineNumber: position.lineNumber,
+        startColumn: word.startColumn,
+        endColumn: word.endColumn
+      };
+      
+      var suggestions = pythonGristFormulas.map(function(api) {
+        return {
+          label: api.name,
+          kind: monaco.languages.CompletionItemKind.Function,
+          documentation: api.desc,
+          insertText: api.snippet,
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          range: range
+        };
+      });
+      
+      return { suggestions: suggestions };
+    }
+  });
+
   // Register Grist API completions
   monaco.languages.registerCompletionItemProvider('javascript', {
     provideCompletionItems: function(model, position) {
@@ -447,6 +543,19 @@ require(['vs/editor/editor.main'], function() {
     tabSize: 2
   });
 
+  // Create Python Editor
+  editorPython = monaco.editor.create(document.getElementById('editor-python'), {
+    value: defaultPython,
+    language: 'python',
+    theme: 'vs-dark',
+    minimap: { enabled: false },
+    fontSize: 13,
+    lineNumbers: 'on',
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+    tabSize: 4
+  });
+
   // Initialize UI
   renderSnippets();
   renderTemplates();
@@ -490,6 +599,7 @@ grist.onOptions(function(options) {
     if (options._js) editorJS && editorJS.setValue(options._js);
     if (options._html) editorHTML && editorHTML.setValue(options._html);
     if (options._css) editorCSS && editorCSS.setValue(options._css);
+    if (options._python) editorPython && editorPython.setValue(options._python);
     document.getElementById('status-saved').textContent = 'Installé ✓';
   }
 });
@@ -706,6 +816,7 @@ function resetCode() {
   if (editorJS) editorJS.setValue(defaultJS);
   if (editorHTML) editorHTML.setValue(defaultHTML);
   if (editorCSS) editorCSS.setValue(defaultCSS);
+  if (editorPython) editorPython.setValue(defaultPython);
   showToast('Code réinitialisé', 'info');
   runPreview();
 }
@@ -714,13 +825,15 @@ async function installWidget() {
   var jsCode = editorJS ? editorJS.getValue() : '';
   var htmlCode = editorHTML ? editorHTML.getValue() : '';
   var cssCode = editorCSS ? editorCSS.getValue() : '';
+  var pythonCode = editorPython ? editorPython.getValue() : '';
   
   try {
     await grist.setOptions({
       _installed: true,
       _js: jsCode,
       _html: htmlCode,
-      _css: cssCode
+      _css: cssCode,
+      _python: pythonCode
     });
     
     isInstalled = true;
