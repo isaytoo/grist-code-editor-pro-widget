@@ -166,6 +166,7 @@
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
+      overflow: hidden;
     }
 
     .sidebar-section {
@@ -191,12 +192,16 @@
 
     .sidebar-content {
       padding: 8px;
-      max-height: 200px;
+      max-height: 180px;
       overflow-y: auto;
     }
 
     .sidebar-content.collapsed {
       display: none;
+    }
+
+    .sidebar-section:last-child .sidebar-content {
+      max-height: 250px;
     }
 
     /* Columns list */
@@ -632,12 +637,12 @@
         </div>
 
         <!-- API Reference Section -->
-        <div class="sidebar-section" style="flex:1;">
+        <div class="sidebar-section" style="flex:1; display:flex; flex-direction:column; min-height:0;">
           <div class="sidebar-header" onclick="toggleSection(this)">
             <span>📚 API Grist</span>
             <span class="toggle-icon">▼</span>
           </div>
-          <div class="sidebar-content" id="api-list" style="max-height:none;">
+          <div class="sidebar-content" id="api-list" style="flex:1; max-height:none; overflow-y:auto;">
             <!-- Populated by JS -->
           </div>
         </div>
